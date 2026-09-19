@@ -204,7 +204,10 @@ conda activate geo
 python exeter_conflation.py
 ```
 
-### Run the dashboard
+**Live demo:** https://os-ngd-highways-exeter-conflation.streamlit.app
+
+
+### Run the dashboard locally
 
 ```bash
 streamlit run app.py
