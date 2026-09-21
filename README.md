@@ -10,6 +10,8 @@ This project demonstrates the core technical task described in the Streets Data 
 
 Interactive Streamlit dashboard presenting the findings.
 
+**Live demo:** [https://os-ngd-highways-exeter-conflation.streamlit.app](https://os-ngd-highways-exeter-conflation.streamlit.app)
+
 **Run locally:**
 
 ```bash
@@ -17,11 +19,19 @@ conda activate geo
 streamlit run app.py
 ```
 
-The dashboard includes:
+The dashboard offers three modes:
 
-- **Executive Summary** — headline findings and recommendation
-- **Conflation Status** — matchStatus distribution
-- **Unmatched Analysis** — profiles by classification, formOfWay, provenance, length
+| Mode | Input | Purpose |
+|------|-------|---------|
+| **Demo (Exeter sample)** | Bundled files | Show the analysis working out of the box |
+| **Quick Check** | RoadLink file only | For users who only have `matchStatus` |
+| **Full Analysis** | Street + RoadLink | Adds NSG street count for context |
+
+All modes present the same six tabs:
+
+- **Executive Summary** — headline findings, flags, and recommendation
+- **Conflation Status** — distribution of `matchStatus`
+- **Unmatched Analysis** — profiles by classification, form of way, provenance, length
 - **Discrepancies** — matched but attributes disagree
 - **Review Queue** — records awaiting human review
 - **Data** — supporting RoadLink table
@@ -57,11 +67,13 @@ Two files are used:
 - `data/Highways_Roads_Street_FULL_001.gml` — NSG-defined streets with USRNs
 - `data/Highways_Roads_RoadLink_FULL_001.gml` — OS road geometry with `matchStatus`
 
+The other three files in the download (Road, RoadNode, RoadJunction) are not used in this analysis.
+
 ---
 
 ## 🧪 Methodology
 
-The workflow is fully scripted and reproducible in `exeter_conflation.py`.
+The workflow is available in two forms — **Python/GeoPandas** and **SQL** — both producing the same findings.
 
 ### Step 1 — Profile `matchStatus`
 
@@ -70,6 +82,7 @@ Count the distribution of `matchStatus` across all RoadLinks.
 ### Step 2 — Profile unmatched links
 
 Break down the unmatched links by:
+
 - `roadClassification`
 - `formOfWay`
 - `provenance`
@@ -157,6 +170,7 @@ The `No Match` status reflects the correct boundary of the NSG, not a gap in the
 | Language | Python 3.11 |
 | Geospatial | GeoPandas 1.0.1, Shapely 2.1.1 |
 | Data | Pandas 2.3.1 |
+| Database | SQLite 3 |
 | Visualisation | Matplotlib 3.10.0 |
 | Dashboard | Streamlit |
 | GIS (inspection) | QGIS |
@@ -167,18 +181,22 @@ The `No Match` status reflects the correct boundary of the NSG, not a gap in the
 
 ```
 exeter_highways_conflation/
-├── app.py                            # Streamlit dashboard
-├── exeter_conflation.py              # Analysis script
+├── app.py                            # Streamlit dashboard (3 modes)
+├── exeter_conflation.py              # Python analysis script
+├── exeter_conflation.sql             # SQL analysis queries
+├── load_to_sqlite.py                 # Loads GML into SQLite
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
 ├── data/
 │   ├── Highways_Roads_Street_FULL_001.gml
-│   └── Highways_Roads_RoadLink_FULL_001.gml
+│   ├── Highways_Roads_RoadLink_FULL_001.gml
+│   └── exeter.db                     # SQLite database (generated)
 └── outputs/
     ├── exeter_conflation_report.md
     ├── conflation_status.png
-    └── unmatched_length_histogram.png
+    ├── unmatched_length_histogram.png
+    └── sql_results.txt
 ```
 
 ---
@@ -198,16 +216,34 @@ conda activate geo
 > rather than `mamba activate geo`. Mamba 2.x looks for environments in its
 > own directory, but this environment was created in conda's default location.
 
-### Run the analysis script
+> **Note on PATH:** If `python` resolves to `/usr/bin/python` instead of the
+> conda environment, run `conda activate geo` first, or use the full path:
+> `/opt/anaconda3/envs/geo/bin/python`.
+
+### Run the Python analysis
 
 ```bash
 python exeter_conflation.py
 ```
 
-**Live demo:** https://os-ngd-highways-exeter-conflation.streamlit.app
+Outputs are written to `outputs/`:
 
+| File | Purpose |
+|------|---------|
+| `exeter_conflation_report.md` | Full written report |
+| `conflation_status.png` | Status distribution chart |
+| `unmatched_length_histogram.png` | Length distribution of unmatched links |
 
-### Run the dashboard locally
+### Run the SQL analysis
+
+```bash
+python load_to_sqlite.py
+sqlite3 data/exeter.db < exeter_conflation.sql > outputs/sql_results.txt
+```
+
+This loads the GML data into a SQLite database, then runs the SQL analysis. The output is written to `outputs/sql_results.txt`.
+
+### Run the dashboard
 
 ```bash
 streamlit run app.py
@@ -221,10 +257,13 @@ Then open `http://localhost:8501`.
 
 | Skill | Evidence |
 |-------|----------|
-| **Conflation and matching** | matchStatus profile of OS RoadLinks vs NSG |
+| **Conflation and matching** | `matchStatus` profile of OS RoadLinks vs NSG |
 | **Root-cause investigation** | Evidence chain from classification → name → provenance |
 | **Data quality profiling** | Multi-dimensional analysis of unmatched records |
-| **Geospatial handling** | GML, GeoPandas, CRS awareness |
+| **SQL against relational data** | `exeter_conflation.sql` with GROUP BY, COUNT, subqueries, UNION |
+| **Python + GeoPandas** | `exeter_conflation.py`, `load_to_sqlite.py` |
+| **Geospatial formats** | GML, GeoPandas, CRS awareness |
+| **Interactive tooling** | Streamlit dashboard with three input modes |
 | **Communication** | Written findings, dashboard, recommendation |
 | **Reproducible workflow** | Scripted, documented, version-controlled |
 
