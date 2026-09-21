@@ -2,6 +2,8 @@
 
 A reproducible data science investigation into the **conflation quality** between OS RoadLinks and the **National Street Gazetteer (NSG)** for the Exeter sample.
 
+![Exeter RoadLinks by matchStatus](figures/python_matchstatus_map.png)
+
 This project demonstrates the core technical task described in the Streets Data Scientist role: **conflation and matching of external network data against the NSG**, followed by root-cause investigation of any mismatches.
 
 ---
@@ -151,6 +153,56 @@ The `No Match` status reflects the correct boundary of the NSG, not a gap in the
 
 ---
 
+## 🗺️ Visual Analysis
+
+### Matplotlib rendering — full network
+
+The full RoadLink network, coloured by `matchStatus`. Grey = Matched (6,966). Red = No Match (873). Purple = Attribute Discrepancy (12). Gold = Awaiting Review (9).
+
+![RoadLinks by matchStatus](figures/python_matchstatus_map.png)
+
+**Interpretation:** The unmatched links (red) are scattered through the network rather than concentrated in one area — consistent with the finding that they are OS-surveyed tracks, rural lanes, and enclosed traffic areas rather than NSG streets.
+
+### Matplotlib rendering — unmatched only
+
+The 873 unmatched RoadLinks, isolated.
+
+![Unmatched RoadLinks](figures/python_unmatched_only.png)
+
+**Interpretation:** Removing the matched majority makes the problem visible. These are the links that need review — and the ones we determined are correctly excluded from the NSG.
+
+### Conflation status distribution
+
+![Conflation status](figures/conflation_status.png)
+
+### Length distribution of unmatched links
+
+![Length distribution](figures/unmatched_length_histogram.png)
+
+---
+
+## 🗺️ QGIS Inspection
+
+The RoadLinks were also inspected in QGIS, where field values were validated using the Python Console. The maps below show the same data, styled in QGIS.
+
+### QGIS — full network by matchStatus
+
+The full RoadLink network styled by `matchStatus` in QGIS.
+
+![QGIS full network](figures/qgis_matchstatus_map.png)
+
+**Interpretation:** Matched links dominate the network; unmatched links are scattered as smaller segments throughout the city and surrounding area. This mirrors the Matplotlib rendering and confirms the analysis is reproducible across tools.
+
+### QGIS — unmatched links only
+
+The layer filtered to `matchStatus = 'No Match'` in QGIS.
+
+![QGIS unmatched only](figures/qgis_unmatched_only.png)
+
+**Interpretation:** Isolating the unmatched links shows their distribution clearly. They cluster in peripheral and rural areas, consistent with OS-surveyed tracks and minor roads that were never registered as NSG streets.
+
+---
+
 ## ✅ Recommendation
 
 | Action | Rationale |
@@ -173,7 +225,8 @@ The `No Match` status reflects the correct boundary of the NSG, not a gap in the
 | Database | SQLite 3 |
 | Visualisation | Matplotlib 3.10.0 |
 | Dashboard | Streamlit |
-| GIS (inspection) | QGIS |
+| GIS (inspection) | QGIS (data inspection and field validation) |
+| Map rendering | Matplotlib (reproducible via `make_maps.py`) |
 
 ---
 
@@ -185,6 +238,7 @@ exeter_highways_conflation/
 ├── exeter_conflation.py              # Python analysis script
 ├── exeter_conflation.sql             # SQL analysis queries
 ├── load_to_sqlite.py                 # Loads GML into SQLite
+├── make_maps.py                      # Renders the maps in Matplotlib
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
@@ -192,10 +246,15 @@ exeter_highways_conflation/
 │   ├── Highways_Roads_Street_FULL_001.gml
 │   ├── Highways_Roads_RoadLink_FULL_001.gml
 │   └── exeter.db                     # SQLite database (generated)
+├── figures/
+│   ├── python_matchstatus_map.png
+│   ├── python_unmatched_only.png
+│   ├── qgis_matchstatus_map.png
+│   ├── qgis_unmatched_only.png
+│   ├── conflation_status.png
+│   └── unmatched_length_histogram.png
 └── outputs/
     ├── exeter_conflation_report.md
-    ├── conflation_status.png
-    ├── unmatched_length_histogram.png
     └── sql_results.txt
 ```
 
@@ -226,14 +285,6 @@ conda activate geo
 python exeter_conflation.py
 ```
 
-Outputs are written to `outputs/`:
-
-| File | Purpose |
-|------|---------|
-| `exeter_conflation_report.md` | Full written report |
-| `conflation_status.png` | Status distribution chart |
-| `unmatched_length_histogram.png` | Length distribution of unmatched links |
-
 ### Run the SQL analysis
 
 ```bash
@@ -241,7 +292,11 @@ python load_to_sqlite.py
 sqlite3 data/exeter.db < exeter_conflation.sql > outputs/sql_results.txt
 ```
 
-This loads the GML data into a SQLite database, then runs the SQL analysis. The output is written to `outputs/sql_results.txt`.
+### Render the maps
+
+```bash
+python make_maps.py
+```
 
 ### Run the dashboard
 
@@ -261,10 +316,11 @@ Then open `http://localhost:8501`.
 | **Root-cause investigation** | Evidence chain from classification → name → provenance |
 | **Data quality profiling** | Multi-dimensional analysis of unmatched records |
 | **SQL against relational data** | `exeter_conflation.sql` with GROUP BY, COUNT, subqueries, UNION |
-| **Python + GeoPandas** | `exeter_conflation.py`, `load_to_sqlite.py` |
+| **Python + GeoPandas** | `exeter_conflation.py`, `load_to_sqlite.py`, `make_maps.py` |
 | **Geospatial formats** | GML, GeoPandas, CRS awareness |
+| **GIS inspection** | QGIS field validation and visual inspection |
 | **Interactive tooling** | Streamlit dashboard with three input modes |
-| **Communication** | Written findings, dashboard, recommendation |
+| **Communication** | Written findings, dashboard, maps, recommendation |
 | **Reproducible workflow** | Scripted, documented, version-controlled |
 
 ---

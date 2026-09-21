@@ -6,3 +6,5 @@ __pycache__/
 *.gfs
 *.pgw
 data/exeter.db
+*.pgw
+data/exeter.db
